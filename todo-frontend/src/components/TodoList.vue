@@ -1,92 +1,105 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+
+const todos = ref([])
+const newTitle = ref('')
+const newDueDate = ref('')
+const filter = ref('all')
+
+const API_BASE_URL = import.meta.env.VITE_API_URL
+
+const filteredTodos = computed(() => {
+  if (filter.value === 'all') return todos.value
+  if (filter.value === 'completed') return todos.value.filter(todo => todo.isCompleted)
+  if (filter.value === 'pending') return todos.value.filter(todo => !todo.isCompleted)
+})
+
+function formatDate(dateStr) {
+  if (!dateStr) return "Yok"
+  const date = new Date(dateStr)
+  return date.toLocaleDateString("tr-TR")
+}
+
+async function fetchTodos() {
+  try {
+    console.log("FETCH WORKING FROM: [TodoList.vue]", API_BASE_URL)
+
+
+    const res = await fetch(`${API_BASE_URL}/api/todoitems`)
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+    const data = await res.json()
+    todos.value = data
+  } catch (error) {
+    console.error("Fetch error:", error)
+  }
+}
+
+async function addTodo() {
+  if (!newTitle.value.trim() || !newDueDate.value) {
+    alert("Lütfen başlık ve teslim tarihi giriniz.")
+    return
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/todoitems`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: newTitle.value,
+        dueDate: newDueDate.value,
+        isCompleted: false  // ← Buraya dikkat
+      })
+    })
+    if (!res.ok) throw new Error("Todo eklenemedi.")
+
+    await res.json()
+    newTitle.value = ''
+    newDueDate.value = ''
+    await fetchTodos()
+  } catch (err) {
+    console.error("Add error:", err)
+  }
+}
+
+onMounted(() => {
+  fetchTodos()
+})
+</script>
+
 <template>
-  <!-- Make sure this form only appears ONCE -->
+  <!-- Add New Task -->
   <form @submit.prevent="addTodo" class="mb-4 space-x-2">
     <input
       v-model="newTitle"
-      placeholder="Add new task..."
+      placeholder="Görev başlığı..."
+      class="border px-2 py-1 rounded"
+    />
+    <input
+      v-model="newDueDate"
+      type="date"
       class="border px-2 py-1 rounded"
     />
     <button type="submit" class="bg-blue-500 text-white px-3 py-1 rounded">
-      Add
+      Ekle
     </button>
   </form>
 
-  <!-- Filter buttons -->
+  <!-- Filter Buttons -->
   <div class="mb-4 space-x-2">
-    <button @click="filter = 'all'" :class="{ 'font-bold': filter === 'all' }">
-      All
-    </button>
-    <button
-      @click="filter = 'completed'"
-      :class="{ 'font-bold': filter === 'completed' }"
-    >
-      Completed
-    </button>
-    <button
-      @click="filter = 'pending'"
-      :class="{ 'font-bold': filter === 'pending' }"
-    >
-      Pending
-    </button>
+    <button @click="filter.value = 'all'" :class="{ 'font-bold': filter.value === 'all' }">all</button>
+    <button @click="filter.value = 'completed'" :class="{ 'font-bold': filter.value === 'completed' }">completed</button>
+    <button @click="filter.value = 'pending'" :class="{ 'font-bold': filter.value === 'pending' }">waiting</button>
   </div>
 
-  <!-- Todo list -->
+  <!-- Todo List -->
   <ul>
-    <li v-for="todo in filteredTodos" :key="todo.id">
-      {{ todo.title }} -
-      <span v-if="todo.completed">✅</span>
-      <span v-else>❌</span>
+    <li v-for="todo in filteredTodos" :key="todo.id" class="mb-2">
+      <div>
+        <strong>{{ todo.title }}</strong> – 
+        Teslim: {{ formatDate(todo.dueDate) }} – 
+        <span v-if="todo.isCompleted">✅</span>
+        <span v-else>❌</span>
+      </div>
     </li>
   </ul>
 </template>
-
-<script>
-export default {
-  data() {
-    return {
-      todos: [],
-      newTitle: '',
-      filter: 'all'
-    }
-  },
-  computed: {
-    filteredTodos() {
-      if (this.filter === 'all') return this.todos
-      if (this.filter === 'completed') return this.todos.filter(todo => todo.completed)
-      if (this.filter === 'pending') return this.todos.filter(todo => !todo.completed)
-    }
-  },
-  methods: {
-    async fetchTodos() {
-      try {
-        const res = await fetch("http://api:8080/api/todos")
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
-        const data = await res.json()
-        this.todos = data
-      } catch (error) {
-        console.error("Fetch error:", error)
-      }
-    },
-    async addTodo() {
-      if (!this.newTitle.trim()) return
-      try {
-        await fetch("http://api:8080/api/todos", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: this.newTitle,
-            isCompleted: false
-          })
-        })
-        this.newTitle = ''
-        await this.fetchTodos()
-      } catch (err) {
-        console.error("Add error:", err)
-      }
-    }
-  },
-  mounted() {
-    this.fetchTodos()
-  }
-}
-</script>

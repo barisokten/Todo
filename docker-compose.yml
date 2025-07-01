@@ -16,12 +16,12 @@ services:
     build: ./TodoApi
     container_name: todo-api
     ports:
-      - "8080:8080"
+      - "5000:5000"  # ✅ dışarıda 5000, içeride 8080
     depends_on:
       - db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Password123.
+      POSTGRES_PASSWORD: yourpassword
       POSTGRES_DB: todoapp
     restart: always
 
@@ -33,7 +33,7 @@ services:
     depends_on:
       - api
     environment:
-      VITE_API_URL: "http://api:8080"  # Lokal test için dış port
+      VITE_API_URL: "http://api:5000"  # ❗BU kısmı değiştirme! container içinden api'ye erişir
     restart: always
 
 volumes:
