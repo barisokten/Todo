@@ -16,7 +16,11 @@
     "vite": "^6.3.5"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.1.11",
     "firebase": "^11.9.1",
+    "primevue": "^4.3.5",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-primeui": "^0.6.1",
     "vue-router": "^4.5.1",
     "vuedraggable": "^4.1.0"
   }
